@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checker · Payslip</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/"><span class="logo">P</span> Payslip</a>
+    <nav>
+      <a href="/employer.html">Employer</a>
+      <a href="/worker.html">Worker</a>
+      <a class="active" href="/check.html">Checker</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Check someone's income</h1>
+    <p class="lead">Paste the salary proof code the worker gave you. You'll see their verified salary, and nothing about their personal wallet.</p>
+
+    <div class="card">
+      <h2>Salary proof code</h2>
+      <textarea id="proof" placeholder="4524356:uivktest1…" spellcheck="false" autocomplete="off"></textarea>
+      <div class="actions"><button class="gold" id="check">Check income</button></div>
+      <p class="small muted" style="margin-bottom:0">The code is used once to scan the blockchain on this computer, then forgotten. It is never stored.</p>
+      <div id="out"></div>
+    </div>
+
+    <div id="report"></div>
+  </main>
+  <footer>Payslips are checked against employers' published public stamps</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const LABEL = { verified: "Verified", invalid: "Rejected", "not-a-payslip": "No payslip" };
+const CLS = { verified: "verified", invalid: "invalid", "not-a-payslip": "skipped" };
+
+$("#check").onclick = async () => {
+  const proof = $("#proof").value.trim();
+  $("#check").disabled = true;
+  $("#report").innerHTML = "";
+  $("#out").innerHTML = `<div class="msg info"><span class="spinner"></span>Scanning the Zcash blockchain with this view-only key… this can take up to a minute.</div>`;
+  try {
+    const res = await fetch("/api/check", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ proof }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    $("#out").innerHTML = "";
+    render(data);
+  } catch (e) {
+    $("#out").innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+  }
+  $("#check").disabled = false;
+};
+
+function render({ results, summary }) {
+  const periods = Object.entries(summary.byPeriod)
+    .map(([k, v]) => `<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(Number(v).toFixed(4))} TAZ</div></div>`).join("");
+  $("#report").innerHTML = `
+    <div class="card">
+      <h2>Verified income</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">Verified payslips</div><div class="v">${summary.verifiedCount}</div></div>
+        <div class="stat"><div class="k">Verified total</div><div class="v">${esc(Number(summary.verifiedTotal).toFixed(4))} TAZ</div></div>
+        ${periods}
+      </div>
+    </div>
+    <div class="card">
+      <h2>Every payment into this salary account</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Status</th><th>Amount</th><th>Employer</th><th>Worker</th><th>Period</th><th>Payslip</th><th>Block</th></tr></thead>
+        <tbody>${results.map((r) => `
+          <tr>
+            <td><span class="pill ${CLS[r.status]}">${LABEL[r.status]}</span></td>
+            <td><b>${esc(r.value)}</b></td>
+            <td>${esc(r.employerName ?? r.payslip?.employer ?? "—")}</td>
+            <td>${esc(r.payslip?.worker ?? "—")}</td>
+            <td>${esc(r.payslip?.period ?? "—")}</td>
+            <td>${r.payslip ? "#" + esc(r.payslip.id) : "—"}</td>
+            <td class="small muted">${esc(r.height)}</td>
+          </tr>
+          ${r.status !== "verified" ? `<tr><td></td><td colspan="6" class="small muted">${esc(r.reason)}${r.memo && r.status === "not-a-payslip" ? ` · memo: “${esc(r.memo)}”` : ""}</td></tr>` : ""}`).join("")}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card privacy">
+      <div class="yes"><h2>What this proves</h2><ul>
+        <li>These payments were received by the account this code belongs to</li>
+        <li>Verified payslips were signed by the named employer, and the amount paid matches</li>
+        <li>No payslip is counted twice</li>
+      </ul></div>
+      <div class="no"><h2>What this does not show</h2><ul>
+        <li>The worker's personal wallet, spending or balance</li>
+        <li>Where money went after it arrived</li>
+        <li>That the person showing you this code owns the account: ask them to prove it, for example by receiving a small payment you send</li>
+      </ul></div>
+    </div>`;
+}
+</script>
+</body>
+</html>

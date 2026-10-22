@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employer · Payslip</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/"><span class="logo">P</span> Payslip</a>
+    <nav>
+      <a class="active" href="/employer.html">Employer</a>
+      <a href="/worker.html">Worker</a>
+      <a href="/check.html">Checker</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Pay your team privately</h1>
+    <p class="lead">Everyone on this list is paid in one shielded transaction. Each person gets a payslip that only they can read, stamped with your signature.</p>
+
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><div class="k">Employer</div><div class="v" id="emp-name">…</div></div>
+        <div class="stat"><div class="k">Ready to spend</div><div class="v" id="emp-balance"><span class="spinner"></span></div></div>
+      </div>
+      <p class="small muted" style="margin:12px 0 0">Your public stamp (publish this so anyone can check your payslips):
+        <span class="mono" id="emp-key">…</span></p>
+    </div>
+
+    <div class="card">
+      <h2>Payroll</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:80px">Payslip #</th><th style="width:130px">Name</th><th>Shielded address</th><th style="width:100px">Amount (TAZ)</th><th style="width:110px">Period</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="secondary" id="add">+ Add person</button>
+        <label class="btn secondary" style="background:#efece4;color:var(--ink)">Import CSV<input type="file" id="csv" accept=".csv" hidden></label>
+        <span class="small muted" style="align-self:center">CSV columns: id,name,address,amount,period</span>
+      </div>
+      <div class="actions">
+        <button class="secondary" id="preview">Preview payslips</button>
+        <button class="gold" id="pay">Pay everyone privately</button>
+      </div>
+      <div id="out"></div>
+    </div>
+  </main>
+  <footer>Testnet only · Payments cannot be undone</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const thisMonth = new Date().toISOString().slice(0, 7);
+
+function addRow(r = {}) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input name="id" value="${esc(r.id)}" placeholder="007"></td>
+    <td><input name="name" value="${esc(r.name)}" placeholder="Ada"></td>
+    <td><input name="address" class="mono" value="${esc(r.address)}" placeholder="utest1…"></td>
+    <td><input name="amount" value="${esc(r.amount)}" placeholder="0.05" inputmode="decimal"></td>
+    <td><input name="period" value="${esc(r.period ?? thisMonth)}"></td>
+    <td><button class="link" title="Remove">✕</button></td>`;
+  tr.querySelector("button").onclick = () => tr.remove();
+  $("#rows").append(tr);
+}
+
+function rows() {
+  return [...$("#rows").children].map((tr) =>
+    Object.fromEntries([...tr.querySelectorAll("input")].map((i) => [i.name, i.value.trim()])))
+    .filter((r) => Object.values(r).some((v) => v && v !== thisMonth));
+}
+
+function show(kind, html) { $("#out").innerHTML = `<div class="msg ${kind}">${html}</div>`; }
+
+async function post(url, body) {
+  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Something went wrong");
+  return data;
+}
+
+async function loadEmployer() {
+  try {
+    const e = await (await fetch("/api/employer")).json();
+    $("#emp-name").textContent = e.name ?? e.id;
+    $("#emp-key").textContent = e.publicKey ?? "(no key yet)";
+    $("#emp-balance").textContent = e.spendable ? `${Number(e.spendable).toFixed(4)} TAZ` : "unknown";
+  } catch { $("#emp-balance").textContent = "unavailable"; }
+}
+
+$("#add").onclick = () => addRow();
+
+$("#csv").onchange = async (ev) => {
+  const text = await ev.target.files[0].text();
+  const [head, ...lines] = text.trim().split(/\r?\n/);
+  const cols = head.split(",").map((c) => c.trim());
+  $("#rows").innerHTML = "";
+  for (const l of lines) addRow(Object.fromEntries(l.split(",").map((v, i) => [cols[i], v.trim()])));
+  ev.target.value = "";
+};
+
+$("#preview").onclick = async () => {
+  try {
+    const { memos, total } = await post("/api/payroll/preview", { rows: rows() });
+    show("info", `<b>Total: ${esc(total)} TAZ</b> to ${memos.length} ${memos.length === 1 ? "person" : "people"}. Each person will privately receive:<br>` +
+      memos.map((m) => `<div class="mono" style="margin-top:6px">${esc(m)}</div>`).join(""));
+  } catch (e) { show("err", esc(e.message)); }
+};
+
+$("#pay").onclick = async () => {
+  const list = rows();
+  if (!confirm(`Pay ${list.length} ${list.length === 1 ? "person" : "people"} now? Payments cannot be undone.`)) return;
+  $("#pay").disabled = true;
+  show("info", `<span class="spinner"></span>Signing payslips and sending one shielded transaction… this can take a minute.`);
+  try {
+    const { txid, fee } = await post("/api/payroll/pay", { rows: list });
+    show("ok", `<b>Paid ${list.length} ${list.length === 1 ? "person" : "people"} privately.</b> Network fee: ${esc(fee)} TAZ.<br>Transaction: <span class="mono">${esc(txid)}</span><br>
+      <span class="small">On the public blockchain, nobody can see who was paid or how much.</span>`);
+    loadEmployer();
+  } catch (e) { show("err", esc(e.message)); }
+  $("#pay").disabled = false;
+};
+
+loadEmployer();
+addRow();
+</script>
+</body>
+</html>

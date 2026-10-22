@@ -1,0 +1,18 @@
+# Never commit wallets, keys or secrets
+wallets/
+*.age
+*identity*
+*.key
+*.sqlite
+*.db
+.env
+seed*
+mnemonic*
+
+# Build output
+tools/
+target/
+node_modules/
+
+bin/
+*.signing.json

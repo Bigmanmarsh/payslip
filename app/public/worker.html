@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Worker · Payslip</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/"><span class="logo">P</span> Payslip</a>
+    <nav>
+      <a href="/employer.html">Employer</a>
+      <a class="active" href="/worker.html">Worker</a>
+      <a href="/check.html">Checker</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Your salary account</h1>
+    <p class="lead">Keep a separate Zcash account just for salary. Give your employer its address. When someone needs proof of income, give them your salary proof code.</p>
+
+    <div class="card">
+      <h2>Your salary proof code</h2>
+      <p class="small muted">This is a view-only key for your salary account. Whoever has it can see salary paid <b>into</b> this account. They can't spend anything, and they can't see where you move your money afterwards.</p>
+      <div id="workers"><span class="spinner"></span>Loading wallets on this computer…</div>
+    </div>
+
+    <div class="card privacy">
+      <div class="yes">
+        <h2>The checker can see</h2>
+        <ul>
+          <li>Every payment received by this salary account</li>
+          <li>Amounts, dates and payslip contents</li>
+          <li>Which payslips are genuinely signed by an employer</li>
+        </ul>
+      </div>
+      <div class="no">
+        <h2>The checker cannot see</h2>
+        <ul>
+          <li>Your personal wallet or other accounts</li>
+          <li>Where you send money from this account</li>
+          <li>Your spending or current balance</li>
+          <li>Anything about other workers</li>
+        </ul>
+      </div>
+    </div>
+    <p class="small muted">Tip: only receive salary in this account. Anything paid into it will be visible to whoever holds your proof code.</p>
+  </main>
+  <footer>Testnet demo · These wallets live on this computer</footer>
+
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+(async () => {
+  const box = document.querySelector("#workers");
+  try {
+    const { workers } = await (await fetch("/api/workers")).json();
+    if (!workers.length) { box.textContent = "No worker wallets found on this computer."; return; }
+    box.innerHTML = workers.map((w, i) => `
+      <div style="border-top:1px solid var(--line);padding:14px 0">
+        <b>${esc(w.name)}</b>
+        <div class="small muted" style="margin:6px 0 2px">Salary address (give this to your employer)</div>
+        <div class="mono">${esc(w.address)}</div>
+        <div class="small muted" style="margin:10px 0 2px">Salary proof code (give this to a landlord or lender)</div>
+        <textarea readonly id="p${i}">${esc(w.proof)}</textarea>
+        <div class="actions" style="margin-top:6px">
+          <button class="secondary" data-copy="p${i}">Copy proof code</button>
+        </div>
+      </div>`).join("");
+    box.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).value);
+      b.textContent = "Copied ✓";
+    });
+  } catch { box.textContent = "Could not load wallets."; }
+})();
+</script>
+</body>
+</html>
