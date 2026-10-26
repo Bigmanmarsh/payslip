@@ -1,0 +1,10 @@
+{
+  "sections": [
+    { "audio": "1-problem",   "clips": [["home", 1.2, 24.6]] },
+    { "audio": "2-idea",      "clips": [["home", 26.3, 44.5]] },
+    { "audio": "3a-employer", "clips": [["employer", 25.0, 42.5], ["employer", 117.2, 123.7]] },
+    { "audio": "3b-checker",  "clips": [["checker", 3.0, 19.5], ["checker", 255.3, 263.5]] },
+    { "audio": "4-privacy",   "clips": [["checker", 263.5, 283.0]] },
+    { "audio": "5-close",     "clips": [["github", 16.3, 24.0]] }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "1-problem": "I'm Marshall, and like a lot of people in my community, I earn in crypto. On public blockchains, anyone with my address can see what I earn and who pays me. That brings real problems: security risks, people begging, people tracking and copying my moves. And when I need to prove my income to a landlord or a lender, I have to show my whole wallet.",
+  "2-idea": "Payslip fixes both problems, on Zcash. Employers pay their team privately, in one shielded transaction, and every payment carries a payslip signed by the employer. Workers can then prove their salary with a view-only code that never reveals their personal wallet.",
+  "3a-employer": "Here's the employer. I add my team: name, shielded address, and amount. Each person gets a payslip like this, stamped with the employer's signature. One click, and everyone is paid in a single shielded transaction. On the public blockchain, nobody can see who got paid, or how much.",
+  "3b-checker": "Now I'm the worker. I need to prove my income, so I copy my salary proof code. The landlord pastes it in, and sees my verified salary: who paid me, how much, and which month. The signature checks out, and the amount paid matches the payslip. Payments without a valid employer signature are not counted.",
+  "4-privacy": "What the landlord can't see: my personal wallet, my spending, or where I sent my money afterwards. We tested that. A full viewing key leaks it, so Payslip only ever uses the incoming key. The limit: the code shows everything paid into the salary account, so keep it just for salary.",
+  "5-close": "Payslip. Get paid privately, and prove it. The code is open source on GitHub."
+}

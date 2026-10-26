@@ -37,3 +37,7 @@
 - Removed superseded files (make-payment-uri.mjs, unsigned payroll.csv, generated URI txt files). Renamed payroll-signed.csv -> scripts/example-payroll.csv.
 - Wrote README.md (problem, privacy table with tested limits, anti-cheating rules, architecture, Windows setup from scratch, demo walkthrough, testnet txids) and MIT LICENSE.
 - git init (branch main), all files staged, NOT committed yet (needs the user's git name/email). Secret scan of staged files: clean. bin/, tools/, wallets/ are ignored.
+- 2026-10-26: Pushed to https://github.com/Bigmanmarsh/payslip (public), branch main, commit 331140b. GitHub sign-in stored by Git Credential Manager.
+- 2026-10-26: Demo video. Installed FFmpeg 9.0.2 (winget) and Playwright 1.56.1 + Chromium (video/). Narration via Windows TTS (voice: Mark), video/narration.json + make-voices.ps1. video/record.mjs records home/employer/checker/github with a drawn cursor; video/cuts.json + build.mjs cut out the waiting and mix the voice -> payslip-demo.mp4 (117.8 s, 1280x720, H.264/AAC).
+- Live payment during recording: payslip #008, 0.03 TAZ to Worker, tx 017f6ffa...78f1e956 (mined 4542201). Checker shows #005 + #008 verified (0.09 TAZ total).
+- Note: one recording run hung for hours inside a scan (no network timeout in payslip-scan). TODO: add connect/request timeouts. A full scan of the Worker account now takes ~2-3.5 min.

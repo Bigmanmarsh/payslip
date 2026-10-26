@@ -7,6 +7,8 @@
 //!
 //! Output: one JSON object per received payment, on stdout.
 
+use std::time::Duration;
+
 use anyhow::{Context, anyhow};
 use clap::Parser;
 use orchard::keys::PreparedIncomingViewingKey;
@@ -20,6 +22,9 @@ use zcash_note_encryption::{try_compact_note_decryption, try_note_decryption};
 use zcash_primitives::transaction::Transaction;
 use zcash_protocol::consensus::{BlockHeight, BranchId, TEST_NETWORK};
 use zcash_protocol::memo::{Memo, MemoBytes};
+
+/// Give up if the server sends nothing for this long, instead of hanging forever.
+const STALL_LIMIT: Duration = Duration::from_secs(60);
 
 #[derive(Parser)]
 #[command(about = "List payments received by a Zcash testnet account, using only its incoming viewing key")]
@@ -70,7 +75,10 @@ async fn main() -> anyhow::Result<()> {
         })
         .await?
         .into_inner();
-    while let Some(block) = stream.message().await? {
+    while let Some(block) = tokio::time::timeout(STALL_LIMIT, stream.message())
+        .await
+        .map_err(|_| anyhow!("The lightwalletd server stopped responding. Check your internet connection and try again."))??
+    {
         for tx in &block.vtx {
             let hits = tx.ironwood_actions.iter().chain(tx.actions.iter()).any(|a| {
                 CompactAction::try_from(a)
@@ -147,7 +155,12 @@ async fn connect(server: &str) -> anyhow::Result<CompactTxStreamerClient<Channel
     let (host, _port) = server
         .rsplit_once(':')
         .ok_or(anyhow!("--server must be host:port"))?;
-    let channel = Channel::from_shared(format!("https://{server}"))?.tls_config(
+    let channel = Channel::from_shared(format!("https://{server}"))?
+        .connect_timeout(Duration::from_secs(20))
+        .http2_keep_alive_interval(Duration::from_secs(20))
+        .keep_alive_timeout(Duration::from_secs(20))
+        .keep_alive_while_idle(true)
+        .tls_config(
         ClientTlsConfig::new()
             .domain_name(host.to_string())
             .assume_http2(true)

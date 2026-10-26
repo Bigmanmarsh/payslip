@@ -16,3 +16,7 @@ node_modules/
 
 bin/
 *.signing.json
+video/out/
+payslip-demo.mp4
+video/node_modules/
+video/.ffpath
