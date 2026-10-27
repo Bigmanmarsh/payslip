@@ -37,15 +37,15 @@ Private payroll on Zcash: pay your team in one shielded transaction with employe
 https://github.com/Bigmanmarsh/payslip
 
 ## Demo
-Video: <PASTE YOUR YOUTUBE LINK HERE>
-To run it yourself: see "Setup" and "Demo walkthrough" in the README (runs locally on Zcash testnet).
+Video: <https://youtu.be/pSsgcEdft18E>
+
 
 ## 2-minute video
-<PASTE YOUR YOUTUBE LINK HERE>
+<https://youtu.be/pSsgcEdft18>
 
 ## Prize address (shielded ZEC)
-<YOUR OWN MAINNET SHIELDED ADDRESS, e.g. from Zashi, starting with u1… or zs1…>
-Only ever share the **address**. Never the recovery phrase.
+u12l2j77ch2achxznjxevx5pthp9j3j6lduc47cs296a06d3wq7nk5x8pfr7rp23387gjjntgnant2t2mmslaw5yf9nksvrshf9lg7pe9rvhfeqelnecdfjh4wd3a483ts2e8zhhp9kq4fm5tt63zn7efze48zheqpk595hp62dv3txqwa
+
 
 ## Team note
 Built by Marshall (@Bigmanmarsh), with AI assistants (Claude as lead engineer, Arena as research teammate).
